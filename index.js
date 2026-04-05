@@ -27,6 +27,12 @@ const client = new Client({
     GatewayIntentBits.MessageContent,
     GatewayIntentBits.GuildVoiceStates,
   ],
+  ws: {
+    large_threshold: 50,
+  },
+  rest: {
+    timeout: 60000,
+  },
 });
 
 client.slashCommands = new Map();
@@ -56,19 +62,50 @@ for (const file of eventFiles) {
   }
 }
 
+client.on("debug", (info) => {
+  if (
+    info.includes("Connecting") ||
+    info.includes("connect") ||
+    info.includes("Gateway") ||
+    info.includes("Session") ||
+    info.includes("Heartbeat") ||
+    info.includes("READY") ||
+    info.includes("error") ||
+    info.includes("Error") ||
+    info.includes("close") ||
+    info.includes("destroy")
+  ) {
+    console.log(`[Discord Debug] ${info}`);
+  }
+});
+
+client.on("error", (error) => {
+  console.error("[Discord Error]", error);
+});
+
+client.on("warn", (warning) => {
+  console.warn("[Discord Warn]", warning);
+});
+
 async function start() {
   try {
     const token = process.env.TOKEN;
-    console.log(`🔍 Token length: ${token?.length}`);
-    console.log(`🔍 Token preview: ${token?.substring(0, 10)}...`);
+    
+    const cleanToken = token?.trim();
+    console.log(`🔍 Token length: ${cleanToken?.length}`);
+    console.log(`🔍 Token preview: ${cleanToken?.substring(0, 10)}...`);
+    
+    if (cleanToken !== token) {
+      console.warn("⚠️ Token had extra whitespace — cleaned!");
+    }
 
     console.log("🔑 Logging in to Discord...");
 
-    const loginPromise = client.login(token);
+    const loginPromise = client.login(cleanToken);
     const timeoutPromise = new Promise((_, reject) =>
       setTimeout(
-        () => reject(new Error("Login timed out after 30s")),
-        30000
+        () => reject(new Error("Login timed out after 60s")),
+        60000
       )
     );
 
@@ -81,7 +118,20 @@ async function start() {
     console.log("🎵 Bot is fully ready!");
   } catch (error) {
     console.error("❌ Failed to start:", error.message);
-    console.error("❌ Full error:", error);
+    
+    console.log("🔄 Retrying login in 5 seconds...");
+    setTimeout(async () => {
+      try {
+        await client.login(process.env.TOKEN?.trim());
+        console.log(`✅ Logged in on retry as ${client.user.tag}`);
+        
+        const setupPlayer = require("./features/player.js");
+        await setupPlayer(client);
+        console.log("🎵 Bot is fully ready (retry)!");
+      } catch (retryError) {
+        console.error("❌ Retry failed:", retryError.message);
+      }
+    }, 5000);
   }
 }
 
