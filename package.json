@@ -20,6 +20,11 @@
     "mediaplex": "^1.0.0",
     "tweetnacl": "^1.0.3",
     "youtube-dl-exec": "^3.1.4",
-    "youtubei": "^1.8.5"
+    "youtubei.js": "^13.3.0"
+  },
+  "overrides": {
+    "discord-player-youtubei": {
+      "youtubei.js": "$youtubei.js"
+    }
   }
 }

@@ -6,26 +6,56 @@ module.exports = async (client) => {
   const player = new Player(client);
   client.player = player;
 
-  try {
-    await player.extractors.register(YoutubeiExtractor, {
-      streamOptions: {
-        useClient: "IOS",
+  const clientOptions = [
+    {
+      name: "ANDROID_MUSIC",
+      config: {
+        streamOptions: {
+          useClient: "ANDROID_MUSIC",
+        },
       },
-    });
-    console.log("✅ YouTubei extractor registered");
-  } catch (error) {
-    console.error("❌ YouTubei extractor failed:", error.message);
-
-    try {
-      await player.extractors.register(YoutubeiExtractor, {
+    },
+    {
+      name: "ANDROID",
+      config: {
         streamOptions: {
           useClient: "ANDROID",
         },
-      });
-      console.log("✅ YouTubei extractor registered (ANDROID fallback)");
-    } catch (error2) {
-      console.error("❌ YouTubei extractor failed completely:", error2.message);
+      },
+    },
+    {
+      name: "TV_EMBEDDED",
+      config: {
+        streamOptions: {
+          useClient: "TV_EMBEDDED",
+        },
+      },
+    },
+    {
+      name: "IOS",
+      config: {
+        streamOptions: {
+          useClient: "IOS",
+        },
+      },
+    },
+  ];
+
+  let registered = false;
+
+  for (const option of clientOptions) {
+    try {
+      await player.extractors.register(YoutubeiExtractor, option.config);
+      console.log(`✅ YouTubei extractor registered with client: ${option.name}`);
+      registered = true;
+      break;
+    } catch (error) {
+      console.warn(`⚠️ YouTubei failed with ${option.name}: ${error.message}`);
     }
+  }
+
+  if (!registered) {
+    console.error("❌ Could not register YouTubei with any client!");
   }
 
   await player.extractors.loadMulti(DefaultExtractors, {
@@ -56,7 +86,7 @@ module.exports = async (client) => {
   });
 
   player.events.on("playerError", (queue, error, track) => {
-    console.error(`[Player Error] Track "${track?.title}":`, error.message);
+    console.error(`[Player Error] "${track?.title}":`, error.message);
     queue.metadata.channel.send(
       `❌ | Error playing **${track?.title}**: ${error.message}`
     );
@@ -67,23 +97,23 @@ module.exports = async (client) => {
   });
 
   player.events.on("playerStart", (queue, track) => {
-    console.log(`[Player] ▶️ Now playing: ${track.title} | Source: ${track.source}`);
+    console.log(`[Player] ▶️ ${track.title} | Source: ${track.source}`);
     queue.metadata.channel.send(
       `🎶 | Now playing: **${track.title}** in **${queue.channel.name}**!`
     );
   });
 
   player.events.on("audioTrackAdd", (queue, track) => {
-    console.log(`[Player] ➕ Track added: ${track.title}`);
+    console.log(`[Player] ➕ ${track.title}`);
     queue.metadata.channel.send(`🎶 | Track **${track.title}** queued!`);
   });
 
   player.events.on("disconnect", (queue) => {
-    queue.metadata.channel.send("❌ | I was manually disconnected, clearing queue!");
+    queue.metadata.channel.send("❌ | Disconnected, clearing queue!");
   });
 
   player.events.on("emptyChannel", (queue) => {
-    queue.metadata.channel.send("❌ | Nobody is in the voice channel, leaving...");
+    queue.metadata.channel.send("❌ | Empty channel, leaving...");
   });
 
   player.events.on("emptyQueue", (queue) => {
@@ -92,7 +122,7 @@ module.exports = async (client) => {
   });
 
   player.events.on("playerSkip", (queue, track) => {
-    console.warn(`[Player] ⏭️ Skipped "${track.title}" — unplayable`);
+    console.warn(`[Player] ⏭️ Skipped "${track.title}"`);
     queue.metadata.channel.send(`⚠️ | Skipped **${track.title}** — unplayable.`);
   });
 
