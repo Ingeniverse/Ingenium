@@ -1,7 +1,4 @@
 require("dotenv").config();
-console.log(`🔍 TOKEN exists: ${!!process.env.TOKEN}`);
-console.log(`🔍 CLIENT_ID exists: ${!!process.env.CLIENT_ID}`);
-console.log(`🔍 PORT: ${process.env.PORT}`);
 
 const ffmpegPath = require("@ffmpeg-installer/ffmpeg").path;
 process.env.FFMPEG_PATH = ffmpegPath;
@@ -48,7 +45,9 @@ for (const file of prefixCommandFiles) {
 console.log("📂 Loading events:");
 for (const file of eventFiles) {
   const event = require(`./events/${file}`);
-  console.log(`   - ${event.name} (${file}) ${event.once ? "[once]" : "[on]"}`);
+  console.log(
+    `   - ${event.name} (${file}) ${event.once ? "[once]" : "[on]"}`
+  );
 
   if (event.once) {
     client.once(event.name, (...args) => event.execute(...args, client));
@@ -57,13 +56,33 @@ for (const file of eventFiles) {
   }
 }
 
-const setupPlayer = require("./features/player.js");
-setupPlayer(client)
-  .then(() => {
+async function start() {
+  try {
+    const token = process.env.TOKEN;
+    console.log(`🔍 Token length: ${token?.length}`);
+    console.log(`🔍 Token preview: ${token?.substring(0, 10)}...`);
+
     console.log("🔑 Logging in to Discord...");
-    return client.login(process.env.TOKEN);
-  })
-  .catch((error) => {
-    console.error("❌ Failed to initialize:", error);
-    process.exit(1);
-  });
+
+    const loginPromise = client.login(token);
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(
+        () => reject(new Error("Login timed out after 30s")),
+        30000
+      )
+    );
+
+    await Promise.race([loginPromise, timeoutPromise]);
+    console.log(`✅ Logged in as ${client.user.tag}`);
+
+    console.log("🎵 Initializing player...");
+    const setupPlayer = require("./features/player.js");
+    await setupPlayer(client);
+    console.log("🎵 Bot is fully ready!");
+  } catch (error) {
+    console.error("❌ Failed to start:", error.message);
+    console.error("❌ Full error:", error);
+  }
+}
+
+start();
