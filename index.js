@@ -1,4 +1,7 @@
 require("dotenv").config();
+console.log(`🔍 TOKEN exists: ${!!process.env.TOKEN}`);
+console.log(`🔍 CLIENT_ID exists: ${!!process.env.CLIENT_ID}`);
+console.log(`🔍 PORT: ${process.env.PORT}`);
 
 const ffmpegPath = require("@ffmpeg-installer/ffmpeg").path;
 process.env.FFMPEG_PATH = ffmpegPath;
