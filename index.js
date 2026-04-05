@@ -1,6 +1,14 @@
+require("dotenv").config();
+
+const ffmpegPath = require("@ffmpeg-installer/ffmpeg").path;
+process.env.FFMPEG_PATH = ffmpegPath;
+console.log(`✅ FFmpeg path: ${ffmpegPath}`);
+
 const { Client, GatewayIntentBits } = require("discord.js");
 const fs = require("fs");
 const keepAlive = require("./server");
+
+keepAlive();
 
 const slashCommandFiles = fs
   .readdirSync("./slash-commands")
@@ -8,13 +16,16 @@ const slashCommandFiles = fs
 const prefixCommandFiles = fs
   .readdirSync("./prefix-commands")
   .filter((file) => file.endsWith(".js"));
-const eventFiles = fs.readdirSync("./events");
+const eventFiles = fs
+  .readdirSync("./events")
+  .filter((file) => file.endsWith(".js"));
 
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
+    GatewayIntentBits.GuildVoiceStates,
   ],
 });
 
@@ -31,8 +42,10 @@ for (const file of prefixCommandFiles) {
   client.prefixCommands.set(command.name, command);
 }
 
+console.log("📂 Loading events:");
 for (const file of eventFiles) {
   const event = require(`./events/${file}`);
+  console.log(`   - ${event.name} (${file}) ${event.once ? "[once]" : "[on]"}`);
 
   if (event.once) {
     client.once(event.name, (...args) => event.execute(...args, client));
@@ -41,5 +54,13 @@ for (const file of eventFiles) {
   }
 }
 
-keepAlive();
-client.login(process.env.TOKEN);
+const setupPlayer = require("./features/player.js");
+setupPlayer(client)
+  .then(() => {
+    console.log("🔑 Logging in to Discord...");
+    return client.login(process.env.TOKEN);
+  })
+  .catch((error) => {
+    console.error("❌ Failed to initialize:", error);
+    process.exit(1);
+  });
