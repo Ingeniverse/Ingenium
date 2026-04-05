@@ -1,3 +1,7 @@
+const ffmpegPath = require("@ffmpeg-installer/ffmpeg").path;
+process.env.FFMPEG_PATH = ffmpegPath;
+console.log(`✅ FFmpeg path: ${ffmpegPath}`);
+
 const { Client, GatewayIntentBits } = require("discord.js");
 const fs = require("fs");
 const keepAlive = require("./server");
@@ -15,6 +19,7 @@ const client = new Client({
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
+    GatewayIntentBits.GuildVoiceStates,
   ],
 });
 
@@ -40,6 +45,9 @@ for (const file of eventFiles) {
     client.on(event.name, (...args) => event.execute(...args, client));
   }
 }
+
+const setupPlayer = require("./features/player.js");
+setupPlayer(client).catch(console.error);
 
 keepAlive();
 client.login(process.env.TOKEN);
