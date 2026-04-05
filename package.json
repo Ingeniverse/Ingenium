@@ -23,6 +23,7 @@
     "express": "^5.2.1",
     "mediaplex": "^1.0.0",
     "tweetnacl": "^1.0.3",
-    "youtubei": "^1.8.5"
+    "youtubei": "^1.8.5",
+    "youtube-dl-exec": "^3.1.4"
   }
 }
