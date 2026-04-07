@@ -1,3 +1,5 @@
+const { MessageFlags } = require("discord.js"); 
+
 module.exports = {
   name: "interactionCreate",
 
@@ -31,7 +33,7 @@ module.exports = {
 
       const errorMessage = {
         content: "❌ | An error occurred while executing this command.",
-        ephemeral: true,
+        ephemeral: MessageFlags.Ephemeral,
       };
 
       try {

@@ -1,5 +1,6 @@
-const { ApplicationCommandOptionType } = require("discord.js");
+const { ApplicationCommandOptionType, MessageFlags } = require("discord.js");
 const { useMainPlayer } = require("discord-player");
+
 
 module.exports = {
   name: "play",
@@ -21,7 +22,7 @@ module.exports = {
     if (!voiceChannel) {
       return interaction.followUp({
         content: "❌ | You need to be in a voice channel to play music!",
-        ephemeral: true,
+        ephemeral: MessageFlags.Ephemeral,
       });
     }
 
@@ -30,7 +31,7 @@ module.exports = {
     if (botVoiceChannelId && voiceChannel.id !== botVoiceChannelId) {
       return interaction.followUp({
         content: "❌ | I'm already playing in a different voice channel!",
-        ephemeral: true,
+        ephemeral: MessageFlags.Ephemeral,
       });
     }
 
