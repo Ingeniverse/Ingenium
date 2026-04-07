@@ -5,50 +5,25 @@ const {
   AppleMusicExtractor,
   AttachmentExtractor,
 } = require("@discord-player/extractor");
-const { YoutubeiExtractor } = require("discord-player-youtubei");
-const { DeezerExtractor } = require("discord-player-deezer"); // ← NUEVO
 
 module.exports = async (client) => {
+  // ═══════════════════════════════════════════
+  // PLAYER
+  // ═══════════════════════════════════════════
   const player = new Player(client, {
     ytdlOptions: {
       highWaterMark: 1 << 25,
     },
   });
   client.player = player;
+  console.log("✅ [Player] Instance created");
+
+  player.on("error", (error) => {
+    console.error(`[Player Base Error]: ${error.message}`);
+  });
 
   // ═══════════════════════════════════════════
-  // 1. YOUTUBE
-  // ═══════════════════════════════════════════
-  try {
-    const { YoutubeiExtractor } = require("discord-player-youtubei");
-
-    let authConfig = {};
-
-    try {
-      const credentials = JSON.parse(process.env.YT_CREDENTIALS);
-      authConfig = {
-        authentication: credentials,
-      };
-      console.log("🔑 [YouTube] Using OAuth credentials");
-    } catch (parseError) {
-      console.error("❌ [YouTube] Failed to parse YT_CREDENTIALS JSON");
-    }
-
-    await player.extractors.register(YoutubeiExtractor, {
-      ...authConfig,
-      streamOptions: {
-        useClient: "ANDROID_MUSIC",
-        highWaterMark: 1 << 25,
-      },
-      overrideBridgeMode: "yt",
-    });
-    console.log("✅ [Extractor] YouTubei registered");
-  } catch (error) {
-    console.error(`❌ [Extractor] YouTubei failed: ${error.message}`);
-  }
-
-  // ═══════════════════════════════════════════
-  // 2. SPOTIFY
+  // 1. SPOTIFY
   // ═══════════════════════════════════════════
   try {
     await player.extractors.register(SpotifyExtractor, {
@@ -61,9 +36,10 @@ module.exports = async (client) => {
   }
 
   // ═══════════════════════════════════════════
-  // 3. DEEZER
+  // 2. DEEZER
   // ═══════════════════════════════════════════
   try {
+    const { DeezerExtractor } = require("discord-player-deezer");
     await player.extractors.register(DeezerExtractor, {});
     console.log("✅ [Extractor] Deezer registered");
   } catch (error) {
@@ -71,7 +47,7 @@ module.exports = async (client) => {
   }
 
   // ═══════════════════════════════════════════
-  // 4. APPLE MUSIC
+  // 3. APPLE MUSIC
   // ═══════════════════════════════════════════
   try {
     await player.extractors.register(AppleMusicExtractor, {});
@@ -81,7 +57,7 @@ module.exports = async (client) => {
   }
 
   // ═══════════════════════════════════════════
-  // 5. SOUNDCLOUD
+  // 4. SOUNDCLOUD
   // ═══════════════════════════════════════════
   try {
     await player.extractors.register(SoundCloudExtractor, {});
@@ -91,7 +67,7 @@ module.exports = async (client) => {
   }
 
   // ═══════════════════════════════════════════
-  // 6. ATTACHMENTS
+  // 5. ATTACHMENTS
   // ═══════════════════════════════════════════
   try {
     await player.extractors.register(AttachmentExtractor, {});
@@ -100,13 +76,24 @@ module.exports = async (client) => {
     console.error(`❌ [Extractor] Attachment failed: ${error.message}`);
   }
 
-  console.log("\n📦 Loaded extractors (priority order):");
+  // ═══════════════════════════════════════════
+  // Log extractors
+  // ═══════════════════════════════════════════
+  console.log("\n📦 Loaded extractors:");
   let i = 1;
   player.extractors.store.forEach((ext, key) => {
     console.log(`   ${i}. ${key}`);
     i++;
   });
+
+  if (player.extractors.store.size === 0) {
+    console.error("⚠️ WARNING: No extractors loaded!");
+  }
   console.log("");
+
+  // ═══════════════════════════════════════════
+  // Event Handlers
+  // ═══════════════════════════════════════════
 
   player.on("debug", (message) => {
     if (
@@ -130,44 +117,50 @@ module.exports = async (client) => {
 
   player.events.on("playerError", (queue, error, track) => {
     console.error(`[Player Error] "${track?.title}":`, error.message);
-    queue.metadata.channel.send(
-      `❌ | Error al reproducir **${track?.title}**: ${error.message}`,
-    );
+    queue.metadata?.channel
+      ?.send(`❌ | Error al reproducir **${track?.title}**: ${error.message}`)
+      .catch(() => {});
   });
 
   player.events.on("error", (queue, error) => {
-    console.error(`[Queue Error] [${queue.guild.name}]: ${error.message}`);
+    console.error(`[Queue Error] [${queue?.guild?.name}]: ${error.message}`);
   });
 
   player.events.on("playerStart", (queue, track) => {
     console.log(`[Player] ▶️ ${track.title} | Source: ${track.source}`);
-    queue.metadata.channel.send(
-      `🎶 | Reproduciendo: **${track.title}** en **${queue.channel.name}**!\n` +
-        `📡 Fuente: \`${track.source}\``,
-    );
+    queue.metadata?.channel
+      ?.send(
+        `🎶 | Reproduciendo: **${track.title}** en **${queue.channel.name}**!\n` +
+          `📡 Fuente: \`${track.source}\``,
+      )
+      .catch(() => {});
   });
 
   player.events.on("audioTrackAdd", (queue, track) => {
-    queue.metadata.channel.send(`🎶 | **${track.title}** añadido a la cola!`);
+    queue.metadata?.channel
+      ?.send(`🎶 | **${track.title}** añadido a la cola!`)
+      .catch(() => {});
   });
 
   player.events.on("disconnect", (queue) => {
-    queue.metadata.channel.send("❌ | Desconectado, limpiando cola!");
+    queue.metadata?.channel?.send("❌ | Desconectado!").catch(() => {});
   });
 
   player.events.on("emptyChannel", (queue) => {
-    queue.metadata.channel.send("❌ | Canal vacío, saliendo...");
+    queue.metadata?.channel
+      ?.send("❌ | Canal vacío, saliendo...")
+      .catch(() => {});
   });
 
   player.events.on("emptyQueue", (queue) => {
-    queue.metadata.channel.send("✅ | Cola terminada!");
+    queue.metadata?.channel?.send("✅ | Cola terminada!").catch(() => {});
   });
 
   player.events.on("playerSkip", (queue, track) => {
     console.warn(`[Player] ⏭️ Skipped "${track.title}" (${track.source})`);
-    queue.metadata.channel.send(
-      `⚠️ | Saltando **${track.title}** — no se pudo reproducir.`,
-    );
+    queue.metadata?.channel
+      ?.send(`⚠️ | Saltando **${track.title}** — no se pudo reproducir.`)
+      .catch(() => {});
   });
 
   console.log("✅ Player initialized successfully!\n");
