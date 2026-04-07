@@ -24,67 +24,12 @@ module.exports = async (client) => {
   try {
     const { YoutubeiExtractor } = require("discord-player-youtubei");
 
-    const clients = [
-      {
-        name: "ANDROID_MUSIC",
-        config: {
-          streamOptions: {
-            useClient: "ANDROID_MUSIC",
-            highWaterMark: 1 << 25,
-          },
-          overrideBridgeMode: "yt",
-        },
-      },
-      {
-        name: "ANDROID",
-        config: {
-          streamOptions: {
-            useClient: "ANDROID",
-            highWaterMark: 1 << 25,
-          },
-          overrideBridgeMode: "yt",
-        },
-      },
-      {
-        name: "TV_EMBEDDED",
-        config: {
-          streamOptions: {
-            useClient: "TV_EMBEDDED",
-            highWaterMark: 1 << 25,
-          },
-          overrideBridgeMode: "yt",
-        },
-      },
-      {
-        name: "IOS",
-        config: {
-          streamOptions: {
-            useClient: "IOS",
-            highWaterMark: 1 << 25,
-          },
-          overrideBridgeMode: "yt",
-        },
-      },
-    ];
-
-    let registered = false;
-
-    for (const option of clients) {
-      try {
-        await player.extractors.register(YoutubeiExtractor, option.config);
-        console.log(`✅ [Extractor] YouTubei registered (${option.name}) — NO AUTH`);
-        registered = true;
-        break;
-      } catch (err) {
-        console.warn(`⚠️ [Extractor] YouTubei ${option.name} failed: ${err.message}`);
-      }
-    }
-
-    if (!registered) {
-      console.error("❌ [Extractor] YouTubei could not be registered with any client");
-    }
-  } catch (importError) {
-    console.error(`❌ [Extractor] YouTubei import failed: ${importError.message}`);
+    await player.extractors.register(YoutubeiExtractor, {
+      overrideBridgeMode: "yt",
+    });
+    console.log("✅ [Extractor] YouTubei registered");
+  } catch (error) {
+    console.error(`❌ [Extractor] YouTubei failed: ${error.message}`);
   }
 
   // ═══════════════════════════════════════════
@@ -196,7 +141,7 @@ module.exports = async (client) => {
     queue.metadata?.channel
       ?.send(
         `🎶 | Reproduciendo: **${track.title}** en **${queue.channel.name}**!\n` +
-          `📡 Fuente: \`${track.source}\``
+          `📡 Fuente: \`${track.source}\``,
       )
       .catch(() => {});
   });
