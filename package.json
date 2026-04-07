@@ -18,6 +18,7 @@
 
     "discord-player-youtubei": "^2.0.0",
     "youtubei.js": "^13.3.0",
+    "youtube-dl-exec": "^3.1.4",
     "discord-player-deezer": "^2.6.0",
 
     "mediaplex": "^1.0.0",
