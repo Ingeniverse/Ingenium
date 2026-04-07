@@ -17,33 +17,21 @@ module.exports = async (client) => {
   client.player = player;
 
   // ═══════════════════════════════════════════
-  // 1. YOUTUBE — OAuth (más estable que cookies)
+  // 1. YOUTUBE
   // ═══════════════════════════════════════════
   try {
     const { YoutubeiExtractor } = require("discord-player-youtubei");
 
-    // Determinar tipo de autenticación
     let authConfig = {};
 
-    if (process.env.YT_CREDENTIALS) {
-      // OAuth (recomendado)
-      try {
-        const credentials = JSON.parse(process.env.YT_CREDENTIALS);
-        authConfig = {
-          authentication: credentials,
-        };
-        console.log("🔑 [YouTube] Using OAuth credentials");
-      } catch (parseError) {
-        console.error("❌ [YouTube] Failed to parse YT_CREDENTIALS JSON");
-      }
-    } else if (process.env.YT_COOKIES) {
-      // Cookies (fallback)
+    try {
+      const credentials = JSON.parse(process.env.YT_CREDENTIALS);
       authConfig = {
-        authentication: process.env.YT_COOKIES,
+        authentication: credentials,
       };
-      console.log("🍪 [YouTube] Using cookies");
-    } else {
-      console.warn("⚠️ [YouTube] No authentication provided!");
+      console.log("🔑 [YouTube] Using OAuth credentials");
+    } catch (parseError) {
+      console.error("❌ [YouTube] Failed to parse YT_CREDENTIALS JSON");
     }
 
     await player.extractors.register(YoutubeiExtractor, {
