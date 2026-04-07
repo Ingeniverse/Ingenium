@@ -88,50 +88,59 @@ client.on("warn", (warning) => {
 });
 
 async function start() {
-  try {
-    const token = process.env.TOKEN;
-    
-    const cleanToken = token?.trim();
-    console.log(`🔍 Token length: ${cleanToken?.length}`);
-    console.log(`🔍 Token preview: ${cleanToken?.substring(0, 10)}...`);
-    
-    if (cleanToken !== token) {
-      console.warn("⚠️ Token had extra whitespace — cleaned!");
+  const token = process.env.TOKEN?.trim();
+
+  if (!token) {
+    console.error("❌ No TOKEN found in environment variables!");
+    process.exit(1);
+  }
+
+  console.log(`🔍 Token length: ${token.length}`);
+  console.log(`🔍 Token preview: ${token.substring(0, 10)}...`);
+
+  // ═══════════════════════════════════════
+  // PASO 1: Login — con retry SOLO si login falla
+  // ═══════════════════════════════════════
+  let loginAttempts = 0;
+  const maxAttempts = 3;
+
+  while (loginAttempts < maxAttempts) {
+    try {
+      loginAttempts++;
+      console.log(`🔑 Login attempt ${loginAttempts}/${maxAttempts}...`);
+
+      await client.login(token);
+      console.log(`✅ Logged in as ${client.user.tag}`);
+      break; // ← Login exitoso, salir del loop
+
+    } catch (loginError) {
+      console.error(`❌ Login attempt ${loginAttempts} failed: ${loginError.message}`);
+
+      if (loginAttempts >= maxAttempts) {
+        console.error("❌ All login attempts failed. Exiting.");
+        process.exit(1);
+      }
+
+      console.log(`🔄 Retrying in 5 seconds...`);
+      await new Promise((resolve) => setTimeout(resolve, 5000));
     }
+  }
 
-    console.log("🔑 Logging in to Discord...");
-
-    const loginPromise = client.login(cleanToken);
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(
-        () => reject(new Error("Login timed out after 60s")),
-        60000
-      )
-    );
-
-    await Promise.race([loginPromise, timeoutPromise]);
-    console.log(`✅ Logged in as ${client.user.tag}`);
-
+  // ═══════════════════════════════════════
+  // PASO 2: Player — SEPARADO del login
+  // Si falla, el bot sigue vivo pero sin música
+  // ═══════════════════════════════════════
+  try {
     console.log("🎵 Initializing player...");
     const setupPlayer = require("./features/player.js");
     await setupPlayer(client);
     console.log("🎵 Bot is fully ready!");
-  } catch (error) {
-    console.error("❌ Failed to start:", error.message);
-    
-    console.log("🔄 Retrying login in 5 seconds...");
-    setTimeout(async () => {
-      try {
-        await client.login(process.env.TOKEN?.trim());
-        console.log(`✅ Logged in on retry as ${client.user.tag}`);
-        
-        const setupPlayer = require("./features/player.js");
-        await setupPlayer(client);
-        console.log("🎵 Bot is fully ready (retry)!");
-      } catch (retryError) {
-        console.error("❌ Retry failed:", retryError.message);
-      }
-    }, 5000);
+  } catch (playerError) {
+    // Player falló, pero el bot SIGUE funcionando
+    // NO hacer otro login — eso crea doble conexión
+    console.error("❌ Player initialization failed:", playerError.message);
+    console.error("⚠️ Bot is running but music features may not work.");
+    console.error("⚠️ Fix the player error and redeploy.");
   }
 }
 
