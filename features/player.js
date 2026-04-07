@@ -10,11 +10,7 @@ module.exports = async (client) => {
   // ═══════════════════════════════════════════
   // PLAYER
   // ═══════════════════════════════════════════
-  const player = new Player(client, {
-    ytdlOptions: {
-      highWaterMark: 1 << 25,
-    },
-  });
+  const player = new Player(client);
   client.player = player;
   console.log("✅ [Player] Instance created");
 
@@ -23,7 +19,87 @@ module.exports = async (client) => {
   });
 
   // ═══════════════════════════════════════════
-  // 1. SPOTIFY
+  // 1. YOUTUBE
+  // ═══════════════════════════════════════════
+  try {
+    const { YoutubeiExtractor } = require("discord-player-youtubei");
+
+    const clients = [
+      {
+        name: "ANDROID_MUSIC",
+        config: {
+          streamOptions: {
+            useClient: "ANDROID_MUSIC",
+            highWaterMark: 1 << 25,
+          },
+          overrideBridgeMode: "yt",
+        },
+      },
+      {
+        name: "ANDROID",
+        config: {
+          streamOptions: {
+            useClient: "ANDROID",
+            highWaterMark: 1 << 25,
+          },
+          overrideBridgeMode: "yt",
+        },
+      },
+      {
+        name: "TV_EMBEDDED",
+        config: {
+          streamOptions: {
+            useClient: "TV_EMBEDDED",
+            highWaterMark: 1 << 25,
+          },
+          overrideBridgeMode: "yt",
+        },
+      },
+      {
+        name: "IOS",
+        config: {
+          streamOptions: {
+            useClient: "IOS",
+            highWaterMark: 1 << 25,
+          },
+          overrideBridgeMode: "yt",
+        },
+      },
+    ];
+
+    let registered = false;
+
+    for (const option of clients) {
+      try {
+        await player.extractors.register(YoutubeiExtractor, option.config);
+        console.log(`✅ [Extractor] YouTubei registered (${option.name}) — NO AUTH`);
+        registered = true;
+        break;
+      } catch (err) {
+        console.warn(`⚠️ [Extractor] YouTubei ${option.name} failed: ${err.message}`);
+      }
+    }
+
+    if (!registered) {
+      console.error("❌ [Extractor] YouTubei could not be registered with any client");
+    }
+  } catch (importError) {
+    console.error(`❌ [Extractor] YouTubei import failed: ${importError.message}`);
+  }
+
+  // ═══════════════════════════════════════════
+  // 2. DEEZER
+  // ═══════════════════════════════════════════
+  try {
+    const { DeezerExtractor } = require("discord-player-deezer");
+    await player.extractors.register(DeezerExtractor, {});
+    console.log("✅ [Extractor] Deezer registered (FALLBACK streamer)");
+  } catch (error) {
+    console.error(`❌ [Extractor] Deezer failed: ${error.message}`);
+  }
+
+  // ═══════════════════════════════════════════
+  // 3. SPOTIFY
   // ═══════════════════════════════════════════
   try {
     await player.extractors.register(SpotifyExtractor, {
@@ -36,18 +112,7 @@ module.exports = async (client) => {
   }
 
   // ═══════════════════════════════════════════
-  // 2. DEEZER
-  // ═══════════════════════════════════════════
-  try {
-    const { DeezerExtractor } = require("discord-player-deezer");
-    await player.extractors.register(DeezerExtractor, {});
-    console.log("✅ [Extractor] Deezer registered");
-  } catch (error) {
-    console.error(`❌ [Extractor] Deezer failed: ${error.message}`);
-  }
-
-  // ═══════════════════════════════════════════
-  // 3. APPLE MUSIC
+  // 4. APPLE MUSIC
   // ═══════════════════════════════════════════
   try {
     await player.extractors.register(AppleMusicExtractor, {});
@@ -57,7 +122,7 @@ module.exports = async (client) => {
   }
 
   // ═══════════════════════════════════════════
-  // 4. SOUNDCLOUD
+  // 5. SOUNDCLOUD
   // ═══════════════════════════════════════════
   try {
     await player.extractors.register(SoundCloudExtractor, {});
@@ -67,7 +132,7 @@ module.exports = async (client) => {
   }
 
   // ═══════════════════════════════════════════
-  // 5. ATTACHMENTS
+  // 6. ATTACHMENTS
   // ═══════════════════════════════════════════
   try {
     await player.extractors.register(AttachmentExtractor, {});
@@ -131,7 +196,7 @@ module.exports = async (client) => {
     queue.metadata?.channel
       ?.send(
         `🎶 | Reproduciendo: **${track.title}** en **${queue.channel.name}**!\n` +
-          `📡 Fuente: \`${track.source}\``,
+          `📡 Fuente: \`${track.source}\``
       )
       .catch(() => {});
   });
