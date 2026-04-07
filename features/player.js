@@ -20,8 +20,22 @@ module.exports = async (client) => {
   // 1. YOUTUBE
   // ═══════════════════════════════════════════
   try {
+    const { YoutubeiExtractor } = require("discord-player-youtubei");
+
+    let authConfig = {};
+
+    try {
+      const credentials = JSON.parse(process.env.YT_CREDENTIALS);
+      authConfig = {
+        authentication: credentials,
+      };
+      console.log("🔑 [YouTube] Using OAuth credentials");
+    } catch (parseError) {
+      console.error("❌ [YouTube] Failed to parse YT_CREDENTIALS JSON");
+    }
+
     await player.extractors.register(YoutubeiExtractor, {
-      authentication: process.env.YT_COOKIES || "",
+      ...authConfig,
       streamOptions: {
         useClient: "ANDROID_MUSIC",
         highWaterMark: 1 << 25,
@@ -31,30 +45,6 @@ module.exports = async (client) => {
     console.log("✅ [Extractor] YouTubei registered");
   } catch (error) {
     console.error(`❌ [Extractor] YouTubei failed: ${error.message}`);
-
-    const fallbackClients = ["ANDROID", "TV_EMBEDDED", "IOS"];
-    let registered = false;
-
-    for (const clientName of fallbackClients) {
-      try {
-        await player.extractors.register(YoutubeiExtractor, {
-          streamOptions: {
-            useClient: clientName,
-            highWaterMark: 1 << 25,
-          },
-          overrideBridgeMode: "yt",
-        });
-        console.log(`✅ [Extractor] YouTubei fallback: ${clientName}`);
-        registered = true;
-        break;
-      } catch (err) {
-        console.warn(`⚠️ [Extractor] YouTubei ${clientName} failed`);
-      }
-    }
-
-    if (!registered) {
-      console.error("❌ [Extractor] YouTubei could not be registered!");
-    }
   }
 
   // ═══════════════════════════════════════════
@@ -123,7 +113,8 @@ module.exports = async (client) => {
       message.includes("Lag Monitor") ||
       message.includes("[NW]") ||
       message.includes("[WS]")
-    ) return;
+    )
+      return;
     console.log(`[Player Debug] ${message}`);
   });
 
@@ -132,14 +123,15 @@ module.exports = async (client) => {
       message.includes("[NW]") ||
       message.includes("[WS]") ||
       message.includes("Lag Monitor")
-    ) return;
+    )
+      return;
     console.log(`[Queue Debug] ${message}`);
   });
 
   player.events.on("playerError", (queue, error, track) => {
     console.error(`[Player Error] "${track?.title}":`, error.message);
     queue.metadata.channel.send(
-      `❌ | Error al reproducir **${track?.title}**: ${error.message}`
+      `❌ | Error al reproducir **${track?.title}**: ${error.message}`,
     );
   });
 
@@ -151,7 +143,7 @@ module.exports = async (client) => {
     console.log(`[Player] ▶️ ${track.title} | Source: ${track.source}`);
     queue.metadata.channel.send(
       `🎶 | Reproduciendo: **${track.title}** en **${queue.channel.name}**!\n` +
-      `📡 Fuente: \`${track.source}\``
+        `📡 Fuente: \`${track.source}\``,
     );
   });
 
@@ -174,7 +166,7 @@ module.exports = async (client) => {
   player.events.on("playerSkip", (queue, track) => {
     console.warn(`[Player] ⏭️ Skipped "${track.title}" (${track.source})`);
     queue.metadata.channel.send(
-      `⚠️ | Saltando **${track.title}** — no se pudo reproducir.`
+      `⚠️ | Saltando **${track.title}** — no se pudo reproducir.`,
     );
   });
 
