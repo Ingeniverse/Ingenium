@@ -1,4 +1,4 @@
-const { MessageFlags } = require("discord.js"); 
+const { MessageFlags } = require("discord.js");
 
 module.exports = {
   name: "interactionCreate",
@@ -9,9 +9,7 @@ module.exports = {
     const command = client.slashCommands.get(interaction.commandName);
 
     if (!command) {
-      console.warn(
-        `⚠️ | Command "/${interaction.commandName}" not found in slashCommands map`
-      );
+      console.warn(`⚠️ | Command "/${interaction.commandName}" not found`);
       return;
     }
 
@@ -20,8 +18,19 @@ module.exports = {
     );
 
     try {
+      // ═══════════════════════════════════════
+      // DEFER — con protección contra expiración
+      // ═══════════════════════════════════════
       if (command.defer && !interaction.deferred && !interaction.replied) {
-        await interaction.deferReply();
+        try {
+          await interaction.deferReply();
+        } catch (deferError) {
+          // Si el defer falla, la interacción ya expiró — no hay nada que hacer
+          console.error(
+            `⚠️ | Could not defer /${interaction.commandName}: ${deferError.message}`
+          );
+          return; // ← SALIR, no intentar ejecutar el comando
+        }
       }
 
       await command.execute(interaction);
@@ -33,7 +42,7 @@ module.exports = {
 
       const errorMessage = {
         content: "❌ | An error occurred while executing this command.",
-        ephemeral: MessageFlags.Ephemeral,
+        flags: MessageFlags.Ephemeral,
       };
 
       try {
@@ -43,9 +52,9 @@ module.exports = {
           await interaction.reply(errorMessage);
         }
       } catch (followUpError) {
+        // Silenciar — la interacción ya expiró
         console.error(
-          "❌ | Failed to send error message to user:",
-          followUpError
+          `⚠️ | Could not send error (interaction expired): ${followUpError.message}`
         );
       }
     }

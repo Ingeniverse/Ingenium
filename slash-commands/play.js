@@ -1,7 +1,6 @@
 const { ApplicationCommandOptionType, MessageFlags } = require("discord.js");
 const { useMainPlayer } = require("discord-player");
 
-
 module.exports = {
   name: "play",
   description: "Play a song in your voice channel",
@@ -16,13 +15,17 @@ module.exports = {
   defer: true,
 
   async execute(interaction) {
+    // ═══════════════════════════════════════
+    // Si llegamos aquí, deferReply YA se hizo
+    // Solo usar followUp()
+    // ═══════════════════════════════════════
     const player = useMainPlayer();
     const voiceChannel = interaction.member?.voice?.channel;
 
     if (!voiceChannel) {
       return interaction.followUp({
         content: "❌ | You need to be in a voice channel to play music!",
-        ephemeral: MessageFlags.Ephemeral,
+        flags: MessageFlags.Ephemeral,
       });
     }
 
@@ -31,7 +34,7 @@ module.exports = {
     if (botVoiceChannelId && voiceChannel.id !== botVoiceChannelId) {
       return interaction.followUp({
         content: "❌ | I'm already playing in a different voice channel!",
-        ephemeral: MessageFlags.Ephemeral,
+        flags: MessageFlags.Ephemeral,
       });
     }
 
@@ -41,8 +44,8 @@ module.exports = {
       return interaction.followUp({
         content:
           "❌ | That's a Discord message link, not a media URL!\n" +
-          "💡 Please provide a YouTube/Spotify/SoundCloud URL or a search term.\n" +
-          "Example: `/play Never Gonna Give You Up` or `/play https://youtube.com/watch?v=...`",
+          "💡 Provide a URL or search term.\n" +
+          "Example: `/play Never Gonna Give You Up`",
       });
     }
 
@@ -66,13 +69,15 @@ module.exports = {
         requestedBy: interaction.user,
       });
 
-      console.log(`[Play] Found: ${result.track.title} | Source: ${result.track.source}`);
+      console.log(
+        `[Play] Found: ${result.track.title} | Source: ${result.track.source}`
+      );
 
       const isPlaylist = result.searchResult.hasPlaylist();
 
       return interaction.followUp({
         content: isPlaylist
-          ? `🎶 | Queued **${result.searchResult.playlist.title}** playlist with ${result.searchResult.tracks.length} tracks!`
+          ? `🎶 | Queued **${result.searchResult.playlist.title}** with ${result.searchResult.tracks.length} tracks!`
           : `🎶 | Loading **${result.track.title}**...`,
       });
     } catch (error) {
