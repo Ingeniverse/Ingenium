@@ -26,11 +26,13 @@ module.exports = async (client) => {
 
     await player.extractors.register(YoutubeiExtractor, {
       overrideBridgeMode: "yt",
-      innertubeConfigRaw: {
-        clientName: "ANDROID_MUSIC",
+      innertubeClientConfig: {
+        gl: "US",
+        hl: "en",
       },
     });
     console.log("✅ [Extractor] YouTubei registered");
+
   } catch (error) {
     console.error(`❌ [Extractor] YouTubei failed: ${error.message}`);
   }

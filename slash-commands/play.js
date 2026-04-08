@@ -50,24 +50,43 @@ module.exports = {
     }
 
     try {
-      console.log(`[Play] Searching for: "${query}"`);
+      try {
+    console.log(`[Play] Searching for: "${query}"`);
 
-      const result = await player.play(voiceChannel, query, {
-        nodeOptions: {
-          metadata: {
-            channel: interaction.channel,
-          },
-          bufferingTimeout: 15000,
-          leaveOnStop: true,
-          leaveOnStopCooldown: 5000,
-          leaveOnEnd: true,
-          leaveOnEndCooldown: 15000,
-          leaveOnEmpty: true,
-          leaveOnEmptyCooldown: 300000,
-          selfDeaf: true,
-        },
-        requestedBy: interaction.user,
+    // Intentar primero con Deezer directamente
+    const searchResult = await player.search(query, {
+      requestedBy: interaction.user,
+      searchEngine: "deezer",  // ← Forzar Deezer primero
+    });
+
+    // Si Deezer no encuentra, buscar con auto
+    const finalResult = searchResult.hasTracks()
+      ? searchResult
+      : await player.search(query, {
+          requestedBy: interaction.user,
+          searchEngine: "auto",
+        });
+
+    if (!finalResult.hasTracks()) {
+      return interaction.followUp({
+        content: `❌ | No results for: **${query}**`,
       });
+    }
+
+    const result = await player.play(voiceChannel, finalResult, {
+      nodeOptions: {
+        metadata: { channel: interaction.channel },
+        bufferingTimeout: 15000,
+        leaveOnStop: true,
+        leaveOnStopCooldown: 5000,
+        leaveOnEnd: true,
+        leaveOnEndCooldown: 15000,
+        leaveOnEmpty: true,
+        leaveOnEmptyCooldown: 300000,
+        selfDeaf: true,
+      },
+      requestedBy: interaction.user,
+    });
 
       console.log(
         `[Play] Found: ${result.track.title} | Source: ${result.track.source}`
