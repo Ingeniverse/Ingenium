@@ -29,8 +29,7 @@ module.exports = {
       });
     }
 
-    const botVoiceChannelId =
-      interaction.guild?.members?.me?.voice?.channelId;
+    const botVoiceChannelId = interaction.guild?.members?.me?.voice?.channelId;
     if (botVoiceChannelId && voiceChannel.id !== botVoiceChannelId) {
       return interaction.followUp({
         content: "❌ | I'm already playing in a different voice channel!",
@@ -50,46 +49,45 @@ module.exports = {
     }
 
     try {
-      try {
-    console.log(`[Play] Searching for: "${query}"`);
+      console.log(`[Play] Searching for: "${query}"`);
 
-    // Intentar primero con Deezer directamente
-    const searchResult = await player.search(query, {
-      requestedBy: interaction.user,
-      searchEngine: "deezer",  // ← Forzar Deezer primero
-    });
-
-    // Si Deezer no encuentra, buscar con auto
-    const finalResult = searchResult.hasTracks()
-      ? searchResult
-      : await player.search(query, {
-          requestedBy: interaction.user,
-          searchEngine: "auto",
-        });
-
-    if (!finalResult.hasTracks()) {
-      return interaction.followUp({
-        content: `❌ | No results for: **${query}**`,
+      // Intentar primero con Deezer directamente
+      const searchResult = await player.search(query, {
+        requestedBy: interaction.user,
+        searchEngine: "deezer", // ← Forzar Deezer primero
       });
-    }
 
-    const result = await player.play(voiceChannel, finalResult, {
-      nodeOptions: {
-        metadata: { channel: interaction.channel },
-        bufferingTimeout: 15000,
-        leaveOnStop: true,
-        leaveOnStopCooldown: 5000,
-        leaveOnEnd: true,
-        leaveOnEndCooldown: 15000,
-        leaveOnEmpty: true,
-        leaveOnEmptyCooldown: 300000,
-        selfDeaf: true,
-      },
-      requestedBy: interaction.user,
-    });
+      // Si Deezer no encuentra, buscar con auto
+      const finalResult = searchResult.hasTracks()
+        ? searchResult
+        : await player.search(query, {
+            requestedBy: interaction.user,
+            searchEngine: "auto",
+          });
+
+      if (!finalResult.hasTracks()) {
+        return interaction.followUp({
+          content: `❌ | No results for: **${query}**`,
+        });
+      }
+
+      const result = await player.play(voiceChannel, finalResult, {
+        nodeOptions: {
+          metadata: { channel: interaction.channel },
+          bufferingTimeout: 15000,
+          leaveOnStop: true,
+          leaveOnStopCooldown: 5000,
+          leaveOnEnd: true,
+          leaveOnEndCooldown: 15000,
+          leaveOnEmpty: true,
+          leaveOnEmptyCooldown: 300000,
+          selfDeaf: true,
+        },
+        requestedBy: interaction.user,
+      });
 
       console.log(
-        `[Play] Found: ${result.track.title} | Source: ${result.track.source}`
+        `[Play] Found: ${result.track.title} | Source: ${result.track.source}`,
       );
 
       const isPlaylist = result.searchResult.hasPlaylist();
